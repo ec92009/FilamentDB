@@ -12,6 +12,7 @@ It stores filament entries in a Git-friendly TSV file, provides a command-line i
 - lets you review and edit records from either the CLI or the GUI
 - exports the library to CSV for use in other tools and workflows
 - shows a visible build badge in the desktop app so you can confirm which local version is running
+- opens with a compact table layout that favors showing about ten rows before scrolling
 
 ## Where FilamentDB Is Going
 
@@ -30,6 +31,7 @@ Near-term direction:
 - command-line CRUD workflow
 - desktop GUI for browsing and editing records
 - visible top-right build badge in the desktop GUI
+- denser default table layout with roughly ten visible rows
 - optional starter sample rows
 - direct TD1 capture from macOS serial output
 
@@ -161,12 +163,12 @@ The desktop GUI wraps the same library and scan workflow:
 - save the measured `TD` and `HEX` directly into the local library
 - review the swatch next to the saved `HEX`
 - correct the color by typing a new hex value or double-clicking the swatch
-- browse the full table with row swatches, sorting, and search
+- browse the full table with row swatches, sorting, search, and a denser default row height
 - double-click a row to load it back into the editor
 - save edits to brand, type, name, notes, and color
 - delete selected rows when they are no longer needed
 
-On macOS, the table should follow native natural scrolling behavior instead of a custom inverted scroll model.
+On macOS, the table follows native natural scrolling behavior instead of a custom inverted scroll model.
 
 ## Sample Data
 

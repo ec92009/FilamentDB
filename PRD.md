@@ -63,6 +63,7 @@ That user needs to:
 - Support browsing, sorting, searching, editing, and deleting rows in the GUI.
 - Support manual color correction through typed hex input and swatch-driven editing.
 - Show a visible build version badge in the desktop app so the running local build is easy to identify.
+- Default the desktop table view to a denser layout that shows about ten rows before scrolling.
 - Preserve compatibility with older local SQLite data by importing legacy `filaments.db` into TSV when needed.
 
 ## Product Principles

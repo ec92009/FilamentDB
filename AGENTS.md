@@ -19,3 +19,4 @@ Working preferences for `~/Dev/FilamentDB`.
 - Keep `README.md` and `PRD.md` written from an outsider's point of view:
   - explain what FilamentDB is, what it does, and where it is going
   - avoid assuming the reader already knows the project history or internal shorthand
+- End each change cycle by docking and launching the freshly built FilamentDB app so the current bundle is visible in the Dock and ready to use.

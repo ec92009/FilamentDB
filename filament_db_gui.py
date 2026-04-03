@@ -44,7 +44,9 @@ from filament_db import (
     update_filament_color,
 )
 
-VISIBLE_VERSION = "v34.0"
+VISIBLE_VERSION = "v34.1"
+DEFAULT_TABLE_VISIBLE_ROWS = 10
+DEFAULT_TABLE_ROW_HEIGHT = 26
 
 
 class ScanWorker(QThread):
@@ -123,13 +125,13 @@ class FilamentDbWindow(QMainWindow):
         central = QWidget()
         self.setCentralWidget(central)
         root = QVBoxLayout(central)
-        root.setContentsMargins(16, 16, 16, 16)
-        root.setSpacing(16)
+        root.setContentsMargins(12, 12, 12, 12)
+        root.setSpacing(10)
 
         root.addLayout(self._build_header_row(), 0)
 
         top_row = QHBoxLayout()
-        top_row.setSpacing(16)
+        top_row.setSpacing(10)
         root.addLayout(top_row, 0)
 
         top_row.addWidget(self._build_scan_panel(), 1)
@@ -149,10 +151,10 @@ class FilamentDbWindow(QMainWindow):
 
     def _build_header_row(self) -> QHBoxLayout:
         header = QHBoxLayout()
-        header.setSpacing(12)
+        header.setSpacing(10)
 
         title_column = QVBoxLayout()
-        title_column.setSpacing(2)
+        title_column.setSpacing(1)
 
         title = QLabel("FilamentDB")
         title.setObjectName("appTitle")
@@ -174,14 +176,14 @@ class FilamentDbWindow(QMainWindow):
     def _build_scan_panel(self) -> QGroupBox:
         box = QGroupBox("Scan")
         layout = QVBoxLayout(box)
-        layout.setSpacing(12)
-        layout.setContentsMargins(18, 18, 18, 18)
+        layout.setSpacing(8)
+        layout.setContentsMargins(14, 14, 14, 14)
 
         form = QFormLayout()
         form.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
         form.setFormAlignment(Qt.AlignmentFlag.AlignTop)
         form.setHorizontalSpacing(10)
-        form.setVerticalSpacing(10)
+        form.setVerticalSpacing(8)
 
         self.brand_combo = self._editable_combo("SUNLU")
         self.type_combo = self._editable_combo("PLA+ 2.0")
@@ -196,7 +198,7 @@ class FilamentDbWindow(QMainWindow):
         layout.addLayout(form)
 
         button_row = QHBoxLayout()
-        button_row.setSpacing(12)
+        button_row.setSpacing(8)
 
         self.scan_button = QPushButton("Scan from TD1")
         self.scan_button.setObjectName("primaryButton")
@@ -224,8 +226,8 @@ class FilamentDbWindow(QMainWindow):
         form = QFormLayout(box)
         form.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
         form.setHorizontalSpacing(10)
-        form.setVerticalSpacing(10)
-        form.setContentsMargins(18, 18, 18, 18)
+        form.setVerticalSpacing(8)
+        form.setContentsMargins(14, 14, 14, 14)
 
         self.device_value = QLabel("Auto-detect")
         self.td_value = QLabel("—")
@@ -241,7 +243,7 @@ class FilamentDbWindow(QMainWindow):
         self.saved_value = QLabel("—")
 
         hex_row = QHBoxLayout()
-        hex_row.setSpacing(8)
+        hex_row.setSpacing(6)
         hex_row.addWidget(self.hex_input)
         hex_row.addWidget(self.color_swatch)
         hex_row.addWidget(self.save_color_button)
@@ -256,11 +258,11 @@ class FilamentDbWindow(QMainWindow):
     def _build_table_panel(self) -> QGroupBox:
         box = QGroupBox("Filaments")
         layout = QVBoxLayout(box)
-        layout.setSpacing(10)
-        layout.setContentsMargins(18, 18, 18, 18)
+        layout.setSpacing(8)
+        layout.setContentsMargins(14, 14, 14, 14)
 
         controls = QHBoxLayout()
-        controls.setSpacing(10)
+        controls.setSpacing(8)
         self.delete_button = QPushButton("Delete Selected")
         self.delete_button.setObjectName("destructiveButton")
         self.delete_button.clicked.connect(self.delete_selected_row)
@@ -284,6 +286,7 @@ class FilamentDbWindow(QMainWindow):
         self.table.setWordWrap(False)
         self.table.cellDoubleClicked.connect(self.on_table_cell_double_clicked)
         header = self.table.horizontalHeader()
+        vertical_header = self.table.verticalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.Fixed)
         header.setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
@@ -299,6 +302,15 @@ class FilamentDbWindow(QMainWindow):
         self.table.setColumnWidth(5, 98)
         self.table.setColumnWidth(6, 72)
         self.table.setColumnWidth(7, 90)
+        vertical_header.setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
+        vertical_header.setDefaultSectionSize(DEFAULT_TABLE_ROW_HEIGHT)
+        vertical_header.setMinimumSectionSize(DEFAULT_TABLE_ROW_HEIGHT)
+        header.setMinimumSectionSize(36)
+        table_header_height = header.sizeHint().height()
+        table_chrome_height = self.table.frameWidth() * 2
+        self.table.setMinimumHeight(
+            table_header_height + (DEFAULT_TABLE_VISIBLE_ROWS * DEFAULT_TABLE_ROW_HEIGHT) + table_chrome_height
+        )
         layout.addWidget(self.table, 1)
         return box
 
@@ -364,14 +376,13 @@ class FilamentDbWindow(QMainWindow):
                     item.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
                     item.setToolTip(f"Double-click to change {row['name']} color")
                 self.table.setItem(row_index, column, item)
-            swatch = ClickableColorSwatch()
+            swatch = ClickableColorSwatch(size=22)
             swatch.set_color(row["color"])
             swatch.clicked.connect(lambda record_id=row["id"]: self.edit_table_color(int(record_id)))
             self.table.setCellWidget(row_index, self.COLOR_SWATCH_COLUMN, swatch)
             if selected_id is not None and int(row["id"]) == selected_id:
                 self.table.selectRow(row_index)
                 self.table.scrollToItem(self.table.item(row_index, 0))
-        self.table.resizeRowsToContents()
         self.table.setSortingEnabled(True)
 
     @staticmethod
@@ -633,8 +644,8 @@ class FilamentDbWindow(QMainWindow):
             QGroupBox {
                 border: 1px solid #4a4a4a;
                 border-radius: 10px;
-                margin-top: 12px;
-                padding-top: 12px;
+                margin-top: 10px;
+                padding-top: 10px;
                 background: #323232;
                 font-weight: 600;
             }
@@ -650,7 +661,7 @@ class FilamentDbWindow(QMainWindow):
                 background: #1f1f1f;
                 border: 1px solid #555555;
                 border-radius: 7px;
-                padding: 6px 8px;
+                padding: 5px 8px;
                 color: #f3f3f3;
                 selection-background-color: #0a84ff;
             }
@@ -685,7 +696,7 @@ class FilamentDbWindow(QMainWindow):
                 color: #fafafa;
                 border: none;
                 border-radius: 8px;
-                padding: 8px 12px;
+                padding: 7px 11px;
                 font-weight: 600;
             }
             QPushButton:hover {
@@ -715,13 +726,13 @@ class FilamentDbWindow(QMainWindow):
                 background: #1e3347;
                 border: 1px solid #335b7c;
                 border-radius: 8px;
-                padding: 10px 12px;
+                padding: 8px 10px;
                 color: #d5ebff;
                 font-weight: 600;
             }
             QLabel#appTitle {
                 color: #f5f5f5;
-                font-size: 24px;
+                font-size: 22px;
                 font-weight: 700;
             }
             QLabel#appSubtitle {
