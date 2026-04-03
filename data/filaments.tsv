@@ -31,3 +31,9 @@ id	brand	filament_type	name	color	td	source	notes	created_at	updated_at
 52	Generic	PLA	Green	#00FF00	2.00	derived	Canonical PLA sandbox color for palette experiments.	2026-04-02T16:20:00+00:00	2026-04-02T16:20:00+00:00
 53	Generic	PLA	White	#FFFFFF	4.00	derived	Canonical PLA sandbox color for palette experiments.	2026-04-02T16:20:00+00:00	2026-04-02T16:20:00+00:00
 54	Generic	PLA	Black	#000000	0.10	derived	Canonical PLA sandbox color for palette experiments.	2026-04-02T16:20:00+00:00	2026-04-02T16:20:00+00:00
+55	IEMAI	PETG	Red Clear Glitter	#752437	17.60	td1		2026-04-03T11:07:18+00:00	2026-04-03T11:07:18+00:00
+56	IEMAI	PETG	Blue	#152B7A	12.50	td1		2026-04-03T11:08:19+00:00	2026-04-03T11:08:19+00:00
+57	IEMAI	PETG	Cyan	#CAC9FF	100.00	td1		2026-04-03T11:08:56+00:00	2026-04-03T11:08:56+00:00
+58	IEMAI	PETG	Cyan	#92D292	42.70	td1		2026-04-03T11:09:33+00:00	2026-04-03T11:09:33+00:00
+59	IEMAI	PETG	Green Fluo	#92D292	42.70	td1		2026-04-03T11:09:45+00:00	2026-04-03T11:09:45+00:00
+60	3DFILS	PLA	Beige	#B2A7C6	4.50	td1		2026-04-03T11:10:47+00:00	2026-04-03T11:10:47+00:00
