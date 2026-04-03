@@ -62,6 +62,7 @@ That user needs to:
 - Support TD1 scan capture from macOS serial output.
 - Support browsing, sorting, searching, editing, and deleting rows in the GUI.
 - Support manual color correction through typed hex input and swatch-driven editing.
+- Show a visible build version badge in the desktop app so the running local build is easy to identify.
 - Preserve compatibility with older local SQLite data by importing legacy `filaments.db` into TSV when needed.
 
 ## Product Principles

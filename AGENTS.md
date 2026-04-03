@@ -9,6 +9,7 @@ Working preferences for `~/Dev/FilamentDB`.
 - `Y` increments with each build/change on that same day.
 - Example: on `2026-03-31`, start at `v31.0`, then `v31.1`, `v31.2`, and so on.
 - When updating the app UI version badge, always bump the minor version for each new build.
+- Keep the visible app version badge in the top-right of the desktop app.
 
 ## Workflow
 

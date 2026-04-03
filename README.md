@@ -11,6 +11,7 @@ It stores filament entries in a Git-friendly TSV file, provides a command-line i
 - supports direct TD1 capture from macOS serial devices
 - lets you review and edit records from either the CLI or the GUI
 - exports the library to CSV for use in other tools and workflows
+- shows a visible build badge in the desktop app so you can confirm which local version is running
 
 ## Where FilamentDB Is Going
 
@@ -28,6 +29,7 @@ Near-term direction:
 - local TSV library
 - command-line CRUD workflow
 - desktop GUI for browsing and editing records
+- visible top-right build badge in the desktop GUI
 - optional starter sample rows
 - direct TD1 capture from macOS serial output
 
@@ -154,6 +156,7 @@ The desktop GUI wraps the same library and scan workflow:
 - choose or type `brand`
 - choose or type `type`
 - choose or type `name`
+- confirm the running build from the version badge in the top-right corner
 - press `Scan from TD1` while the filament is in the TD1
 - save the measured `TD` and `HEX` directly into the local library
 - review the swatch next to the saved `HEX`
@@ -162,6 +165,8 @@ The desktop GUI wraps the same library and scan workflow:
 - double-click a row to load it back into the editor
 - save edits to brand, type, name, notes, and color
 - delete selected rows when they are no longer needed
+
+On macOS, the table should follow native natural scrolling behavior instead of a custom inverted scroll model.
 
 ## Sample Data
 

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-import sys
 
 from PySide6.QtCore import QThread, Qt, Signal
 from PySide6.QtGui import QColor, QIcon
@@ -44,6 +43,8 @@ from filament_db import (
     update_filament,
     update_filament_color,
 )
+
+VISIBLE_VERSION = "v34.0"
 
 
 class ScanWorker(QThread):
@@ -98,26 +99,7 @@ class ClickableColorSwatch(QFrame):
 
 class FilamentTableWidget(QTableWidget):
     def wheelEvent(self, event) -> None:  # pragma: no cover - UI path
-        if sys.platform != "darwin":
-            super().wheelEvent(event)
-            return
-
-        pixel_delta = event.pixelDelta()
-        angle_delta = event.angleDelta()
-        handled = False
-
-        if not pixel_delta.isNull():
-            self.verticalScrollBar().setValue(self.verticalScrollBar().value() + pixel_delta.y())
-            handled = True
-        elif angle_delta.y():
-            step = self.verticalScrollBar().singleStep() * 3
-            direction = -1 if angle_delta.y() > 0 else 1
-            self.verticalScrollBar().setValue(self.verticalScrollBar().value() + direction * step)
-            handled = True
-
-        if handled:
-            event.accept()
-            return
+        # Let Qt/macOS handle native wheel semantics so natural scrolling works.
         super().wheelEvent(event)
 
 
@@ -144,6 +126,8 @@ class FilamentDbWindow(QMainWindow):
         root.setContentsMargins(16, 16, 16, 16)
         root.setSpacing(16)
 
+        root.addLayout(self._build_header_row(), 0)
+
         top_row = QHBoxLayout()
         top_row.setSpacing(16)
         root.addLayout(top_row, 0)
@@ -162,6 +146,30 @@ class FilamentDbWindow(QMainWindow):
         self._apply_style()
         if self.app_icon_path.exists():
             self.setWindowIcon(QIcon(str(self.app_icon_path)))
+
+    def _build_header_row(self) -> QHBoxLayout:
+        header = QHBoxLayout()
+        header.setSpacing(12)
+
+        title_column = QVBoxLayout()
+        title_column.setSpacing(2)
+
+        title = QLabel("FilamentDB")
+        title.setObjectName("appTitle")
+        subtitle = QLabel("Local filament library for measured color and TD data")
+        subtitle.setObjectName("appSubtitle")
+
+        title_column.addWidget(title)
+        title_column.addWidget(subtitle)
+
+        header.addLayout(title_column, 1)
+
+        version_badge = QLabel(VISIBLE_VERSION)
+        version_badge.setObjectName("versionBadge")
+        version_badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        header.addWidget(version_badge, 0, Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight)
+
+        return header
 
     def _build_scan_panel(self) -> QGroupBox:
         box = QGroupBox("Scan")
@@ -710,6 +718,25 @@ class FilamentDbWindow(QMainWindow):
                 padding: 10px 12px;
                 color: #d5ebff;
                 font-weight: 600;
+            }
+            QLabel#appTitle {
+                color: #f5f5f5;
+                font-size: 24px;
+                font-weight: 700;
+            }
+            QLabel#appSubtitle {
+                color: #b2b2b2;
+                font-size: 12px;
+            }
+            QLabel#versionBadge {
+                background: #17324a;
+                border: 1px solid #376487;
+                border-radius: 12px;
+                color: #d9efff;
+                font-size: 12px;
+                font-weight: 700;
+                padding: 6px 10px;
+                min-width: 64px;
             }
             """
         )
