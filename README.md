@@ -1,6 +1,39 @@
-# filamentDB
+# FilamentDB
 
-Small local TSV library for filament records, aligned to the simple HueForge-style naming:
+FilamentDB is a local filament library for people who want a clean, editable record of real 3D printing materials and their measured color data.
+
+It stores filament entries in a Git-friendly TSV file, provides a command-line interface for quick edits and exports, and includes a small desktop GUI for browsing, scanning, and correcting filament records on macOS.
+
+## What FilamentDB Does
+
+- keeps a local catalog of filaments with brand, filament type, color name, hex color, and TD value
+- stores data in `data/filaments.tsv` so the library stays portable and easy to sync
+- supports direct TD1 capture from macOS serial devices
+- lets you review and edit records from either the CLI or the GUI
+- exports the library to CSV for use in other tools and workflows
+
+## Where FilamentDB Is Going
+
+FilamentDB is moving toward becoming a practical source of truth for real printable filament libraries: measured where possible, easy to maintain by hand, and straightforward to reuse from other local tools such as color-planning or print-prep apps.
+
+Near-term direction:
+
+- stronger duplicate detection and merge workflows
+- easier import paths for existing filament libraries
+- better provenance around measured vs. derived values
+- continued refinement of the desktop app for day-to-day library maintenance
+
+## Current Scope
+
+- local TSV library
+- command-line CRUD workflow
+- desktop GUI for browsing and editing records
+- optional starter sample rows
+- direct TD1 capture from macOS serial output
+
+## Data Model
+
+Each filament row centers on a simple, practical set of fields:
 
 - `brand`
 - `type`
@@ -13,19 +46,9 @@ Optional support fields:
 - `source`
 - `notes`
 
-The initial goal is to keep a clean local library of your own filaments and measured TD1 readings.
-
 Internally, the stored column name is `filament_type` to avoid `type` awkwardness in the code, but the CLI and exported shape are presented as `type`.
 
-## Current scope
-
-- local TSV library
-- simple CLI
-- small desktop GUI
-- optional starter sample rows
-- direct TD1 capture from macOS serial output
-
-## Usage
+## Getting Started
 
 Initialize the local database:
 
@@ -34,9 +57,9 @@ cd /path/to/FilamentDB
 uv run python filament_db.py init
 ```
 
-The saved data now lives in `data/filaments.tsv` inside this repo, which is plain text and Git-friendly. If an older `data/filaments.db` exists in the same checkout, the app will import it automatically the first time the TSV is empty.
+The active library lives in `data/filaments.tsv` inside this repo. If an older `data/filaments.db` exists in the same checkout, FilamentDB will import it automatically the first time the TSV is empty.
 
-After you confirm the TSV contains the expected rows on both computers, archive or delete any leftover local `filaments.db` files so the TSV is the only active source of truth.
+After you confirm the TSV contains the expected rows, archive or delete any leftover `filaments.db` files so the TSV becomes the only active source of truth.
 
 Launch the desktop GUI:
 
@@ -45,14 +68,16 @@ cd /path/to/FilamentDB
 uv run python filament_db_gui.py
 ```
 
-Build the local macOS app bundle:
+Build the macOS app bundle:
 
 ```bash
 cd /path/to/FilamentDB
 ./build_filamentdb_app.sh
 ```
 
-That creates `dist/filamentDB.app`. If you switch computers, clone or `git pull` this repo first, then rerun that build script on the other machine.
+That creates `dist/filamentDB.app`.
+
+## Common CLI Commands
 
 Seed a small starter sample set:
 
@@ -112,7 +137,7 @@ uv run python filament_db.py scan \
   --name "Coffee"
 ```
 
-If needed, you can point it at a specific serial device:
+If needed, point it at a specific serial device:
 
 ```bash
 uv run python filament_db.py scan \
@@ -122,35 +147,27 @@ uv run python filament_db.py scan \
   --device /dev/cu.usbmodem21101
 ```
 
-The GUI wraps the same workflow:
+## GUI Workflow
+
+The desktop GUI wraps the same library and scan workflow:
 
 - choose or type `brand`
 - choose or type `type`
 - choose or type `name`
 - press `Scan from TD1` while the filament is in the TD1
-- the measured `TD` and `HEX` are saved directly to the local TSV library
-- review the color swatch next to the saved `HEX`
-- if the TD1 color is off, type a new HEX or double-click the swatch, then press `Save Color`
-- each saved row shows a color sample swatch in the table
-- double-click a row swatch to change that filament's color with the native macOS picker
-- double-click any non-swatch cell in a row to load that filament into the left panel for editing
-- use `Save Changes` to commit edits to brand, type, name, and notes
-- select a row and press `Delete Selected` to remove it from the DB
-- click a table header to sort by that column
-- use the search field above the table to quickly filter filaments
+- save the measured `TD` and `HEX` directly into the local library
+- review the swatch next to the saved `HEX`
+- correct the color by typing a new hex value or double-clicking the swatch
+- browse the full table with row swatches, sorting, and search
+- double-click a row to load it back into the editor
+- save edits to brand, type, name, notes, and color
+- delete selected rows when they are no longer needed
 
-## Sample data note
+## Sample Data
 
-The seeded sample rows are deliberately small and conservative. They are just starter placeholders and are labeled with `source=sample`. Their `td` values are left blank until you measure them or import trustworthy data.
+The seeded sample rows are intentionally conservative. They exist as starter placeholders, are labeled with `source=sample`, and leave `td` blank until you measure or import trustworthy values.
 
 The current starter set includes:
 
 - `SUNLU PLA Matte`: Black, White, Red, Blue, Green
 - `SUNLU Transparent PLA`: Blue, Red, Green, Yellow, Clear, Purple
-
-## Suggested next steps
-
-- add TD1 direct ingestion once the device transport is confirmed
-- add duplicate detection
-- add a tiny GUI for browsing/editing filaments
-- add importers for community or vendor datasets with provenance tracking

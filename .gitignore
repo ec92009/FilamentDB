@@ -1,6 +1,10 @@
 data/*
 !data/filaments.tsv
 out/
+build/
+dist/
+.venv/
+__pycache__/
 *.db
 *.sqlite
 *.sqlite3
