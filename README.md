@@ -30,28 +30,29 @@ Internally, the stored column name is `filament_type` to avoid `type` awkwardnes
 Initialize the local database:
 
 ```bash
-cd ~/Codex/filamentDB
+cd /path/to/FilamentDB
 uv run python filament_db.py init
 ```
 
-The saved data now lives in `~/Codex/filamentDB/data/filaments.tsv`, which is plain text and Git-friendly. If an older `~/Codex/filamentDB/data/filaments.db` exists on a machine, the app will import it automatically the first time the TSV is empty.
+The saved data now lives in `data/filaments.tsv` inside this repo, which is plain text and Git-friendly. If an older `data/filaments.db` exists in the same checkout, the app will import it automatically the first time the TSV is empty.
 
 After you confirm the TSV contains the expected rows on both computers, archive or delete any leftover local `filaments.db` files so the TSV is the only active source of truth.
 
 Launch the desktop GUI:
 
 ```bash
-cd ~/Codex/filamentDB
+cd /path/to/FilamentDB
 uv run python filament_db_gui.py
 ```
 
 Build the local macOS app bundle:
 
 ```bash
-~/Codex/filamentDB/build_filamentdb_app.sh
+cd /path/to/FilamentDB
+./build_filamentdb_app.sh
 ```
 
-That creates `~/Codex/filamentDB/dist/filamentDB.app`. If you switch computers, `git pull` in `~/Codex` first, then rerun that build script on the other machine.
+That creates `dist/filamentDB.app`. If you switch computers, clone or `git pull` this repo first, then rerun that build script on the other machine.
 
 Seed a small starter sample set:
 
