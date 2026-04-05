@@ -19,4 +19,15 @@ Working preferences for `~/Dev/FilamentDB`.
 - Keep `README.md` and `PRD.md` written from an outsider's point of view:
   - explain what FilamentDB is, what it does, and where it is going
   - avoid assuming the reader already knows the project history or internal shorthand
-- End each change cycle by docking and launching the freshly built FilamentDB app so the current bundle is visible in the Dock and ready to use.
+
+## End-of-Cycle Checklist
+
+Run these steps **in order** at the end of every development cycle:
+
+1. **Build the app** — `python build_macos_app.py` (or `bash build_filamentdb_app.sh`)
+2. **Dock the app** — add/replace FilamentDB in the macOS Dock from the freshly built bundle
+3. **Update docs** — refresh `README.md`, `PRD.md`, and `AGENTS.md` to reflect any changes
+4. **Bump the version** — patch-bump `version` in `pyproject.toml` AND update `VISIBLE_VERSION` in `filament_db_gui.py`
+5. **Commit** — small, clear commit message
+6. **Push** — push to remote so work can be resumed from another machine
+7. **Restart the app** — kill any running FilamentDB instance, then open the freshly built `.app`

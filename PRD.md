@@ -65,6 +65,7 @@ That user needs to:
 - Show a visible build version badge in the desktop app so the running local build is easy to identify.
 - Default the desktop table view to a denser layout that shows about ten rows before scrolling.
 - Preserve compatibility with older local SQLite data by importing legacy `filaments.db` into TSV when needed.
+- Validate filament type against known material families (PLA, PETG, TPU, ABS, ASA) before saving; if the type is unrecognized, warn the user and let them modify or bypass the check.
 
 ## Product Principles
 

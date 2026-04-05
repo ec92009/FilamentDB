@@ -13,6 +13,7 @@ It stores filament entries in a Git-friendly TSV file, provides a command-line i
 - exports the library to CSV for use in other tools and workflows
 - shows a visible build badge in the desktop app so you can confirm which local version is running
 - opens with a compact table layout that favors showing about ten rows before scrolling
+- validates filament type entries against known material families (PLA, PETG, TPU, ABS, ASA) and warns before saving unrecognized types
 
 ## Where FilamentDB Is Going
 
@@ -34,6 +35,7 @@ Near-term direction:
 - denser default table layout with roughly ten visible rows
 - optional starter sample rows
 - direct TD1 capture from macOS serial output
+- filament type sanity check (warns on unrecognized material families; user can modify or bypass)
 
 ## Data Model
 
@@ -167,6 +169,7 @@ The desktop GUI wraps the same library and scan workflow:
 - double-click a row to load it back into the editor
 - save edits to brand, type, name, notes, and color
 - delete selected rows when they are no longer needed
+- get a warning and the option to modify or bypass if the filament type doesn't match a known material (PLA, PETG, TPU, ABS, ASA)
 
 On macOS, the table follows native natural scrolling behavior instead of a custom inverted scroll model.
 

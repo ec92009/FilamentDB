@@ -35,6 +35,14 @@ FIELDNAMES = [
 ]
 
 
+KNOWN_FILAMENT_TYPES = ["PLA", "PETG", "TPU", "ABS", "ASA"]
+
+
+def is_known_filament_type(filament_type: str) -> bool:
+    upper = filament_type.upper()
+    return any(known in upper for known in KNOWN_FILAMENT_TYPES)
+
+
 SAMPLE_FILAMENTS = [
     {
         "brand": "SUNLU",
