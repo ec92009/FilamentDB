@@ -29,6 +29,7 @@ from PySide6.QtWidgets import (
 
 from filament_db import (
     DEFAULT_DB_PATH,
+    KNOWN_FILAMENT_TYPES,
     RUNTIME_PROJECT_DIR,
     add_filament,
     connect,
@@ -37,6 +38,7 @@ from filament_db import (
     ensure_hex_color,
     fetch_filament,
     fetch_distinct_values,
+    is_known_filament_type,
     list_filaments,
     migrate_schema,
     read_td1_scan,
@@ -44,7 +46,7 @@ from filament_db import (
     update_filament_color,
 )
 
-VISIBLE_VERSION = "v34.1"
+VISIBLE_VERSION = "v36.0"
 DEFAULT_TABLE_VISIBLE_ROWS = 10
 DEFAULT_TABLE_ROW_HEIGHT = 26
 
@@ -405,6 +407,8 @@ class FilamentDbWindow(QMainWindow):
         if not brand or not filament_type or not name:
             QMessageBox.warning(self, "Missing details", "Please fill in brand, type, and name before scanning.")
             return
+        if not is_known_filament_type(filament_type) and not self._warn_unknown_filament_type(filament_type):
+            return
 
         device_path = detect_td1_device()
         if device_path is None:
@@ -609,6 +613,8 @@ class FilamentDbWindow(QMainWindow):
         if not brand or not filament_type or not name:
             QMessageBox.warning(self, "Missing details", "Brand, type, and name are required.")
             return
+        if not is_known_filament_type(filament_type) and not self._warn_unknown_filament_type(filament_type):
+            return
         updated = update_filament(
             self.connection,
             record_id=self.current_edit_record_id,
@@ -623,6 +629,21 @@ class FilamentDbWindow(QMainWindow):
         self.saved_value.setText(f"Saved as #{self.current_edit_record_id} (details updated)")
         self.scan_status.setText(f"Updated filament #{self.current_edit_record_id}.")
         self.refresh_all()
+
+    def _warn_unknown_filament_type(self, filament_type: str) -> bool:
+        """Show a warning when the type doesn't match a known material. Returns True to proceed."""
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Unknown filament type")
+        msg.setText(
+            f'"{filament_type}" doesn\'t contain a recognized filament type '
+            f'({", ".join(KNOWN_FILAMENT_TYPES)}).'
+        )
+        msg.setInformativeText("Save anyway or go back to modify the type?")
+        modify_btn = msg.addButton("Modify", QMessageBox.ButtonRole.RejectRole)
+        msg.addButton("Save Anyway", QMessageBox.ButtonRole.AcceptRole)
+        msg.setDefaultButton(modify_btn)
+        msg.exec()
+        return msg.clickedButton() is not modify_btn
 
     def _clear_form_after_delete(self) -> None:
         self.saved_value.setText("Deleted")
