@@ -1,6 +1,6 @@
 id	brand	filament_type	name	color	td	source	notes	created_at	updated_at
 17	SUNLU	PLA+ 2.0	Coffee	#6A696D	2.70	td1	Captured from TD1 serial output on macOS.	2026-03-24 18:18:33	2026-03-24 18:18:33
-18	Kexcelled	K5	Skin	#FFD6D8	2.50	td1		2026-03-24 18:26:38	2026-03-24 18:36:54
+18	Kexcelled	PLA	Skin	#FFD6D8	2.50	td1		2026-03-24 18:26:38	2026-04-05T08:04:04+00:00
 21	GEEETECH	TPU	White	#FFFFFF	10.60	td1		2026-03-24 18:39:06	2026-03-24 19:15:37
 22	OVERTURE	Rock PLA	Sedimentary Rock	#F7D6CE	0.10	td1		2026-03-24 18:40:38	2026-03-24 19:06:33
 23	BAMBU LAB	PLA SILK	Silver	#E3FFFF	0.30	td1		2026-03-24 18:42:37	2026-03-24 19:07:14
