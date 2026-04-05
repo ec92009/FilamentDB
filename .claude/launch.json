@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "filamentDB GUI",
+      "runtimeExecutable": "/Users/ecohen/Library/Python/3.9/bin/uv",
+      "runtimeArgs": ["run", "python", "filament_db_gui.py"],
+      "port": 0
+    },
+    {
+      "name": "Build macOS App",
+      "runtimeExecutable": "/Users/ecohen/Library/Python/3.9/bin/uv",
+      "runtimeArgs": ["run", "python", "build_macos_app.py"],
+      "port": 0
+    }
+  ]
+}
