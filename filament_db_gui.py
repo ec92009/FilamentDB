@@ -48,7 +48,7 @@ from filament_db import (
     update_filament_color,
 )
 
-VISIBLE_VERSION = "v43.0"
+VISIBLE_VERSION = "v43.1"
 DEFAULT_TABLE_VISIBLE_ROWS = 10
 DEFAULT_TABLE_ROW_HEIGHT = 26
 

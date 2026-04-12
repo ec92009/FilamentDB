@@ -1,6 +1,6 @@
 [project]
 name = "filamentdb"
-version = "0.43.0"
+version = "0.43.1"
 description = "Local TSV filament library for TD1 readings and manual filament metadata."
 readme = "README.md"
 requires-python = ">=3.9"
