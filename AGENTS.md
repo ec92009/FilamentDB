@@ -31,3 +31,4 @@ Run these steps **in order** at the end of every development cycle:
 5. **Commit** — small, clear commit message
 6. **Push** — push to remote so work can be resumed from another machine
 7. **Restart the app** — kill any running FilamentDB instance, then open the freshly built `.app`
+8. **Optional shortcut** — run `./ship` to perform version bump, commit/push, build, app sync to `~/Applications`, and relaunch in one step

@@ -8,6 +8,7 @@ from PySide6.QtCore import QThread, Qt, Signal
 from PySide6.QtGui import QColor, QIcon
 from PySide6.QtWidgets import (
     QApplication,
+    QCheckBox,
     QComboBox,
     QColorDialog,
     QFormLayout,
@@ -42,11 +43,12 @@ from filament_db import (
     list_filaments,
     migrate_schema,
     read_td1_scan,
+    set_filament_availability,
     update_filament,
     update_filament_color,
 )
 
-VISIBLE_VERSION = "v36.0"
+VISIBLE_VERSION = "v43.0"
 DEFAULT_TABLE_VISIBLE_ROWS = 10
 DEFAULT_TABLE_ROW_HEIGHT = 26
 
@@ -108,7 +110,8 @@ class FilamentTableWidget(QTableWidget):
 
 
 class FilamentDbWindow(QMainWindow):
-    COLOR_SWATCH_COLUMN = 4
+    COLOR_SWATCH_COLUMN = 5
+    HEX_COLUMN = 6
 
     def __init__(self) -> None:
         super().__init__()
@@ -192,11 +195,14 @@ class FilamentDbWindow(QMainWindow):
         self.name_combo = self._editable_combo("Coffee")
         self.notes_input = QLineEdit()
         self.notes_input.setPlaceholderText("Optional notes")
+        self.available_checkbox = QCheckBox("Available (in stock)")
+        self.available_checkbox.setChecked(True)
 
         form.addRow("Brand", self.brand_combo)
         form.addRow("Type", self.type_combo)
         form.addRow("Name", self.name_combo)
         form.addRow("Notes", self.notes_input)
+        form.addRow("Status", self.available_checkbox)
         layout.addLayout(form)
 
         button_row = QHBoxLayout()
@@ -269,6 +275,12 @@ class FilamentDbWindow(QMainWindow):
         self.delete_button.setObjectName("destructiveButton")
         self.delete_button.clicked.connect(self.delete_selected_row)
         controls.addWidget(self.delete_button)
+        self.mark_unavailable_button = QPushButton("Mark Unavailable")
+        self.mark_unavailable_button.clicked.connect(lambda: self.set_selected_availability(False))
+        controls.addWidget(self.mark_unavailable_button)
+        self.mark_available_button = QPushButton("Mark Available")
+        self.mark_available_button.clicked.connect(lambda: self.set_selected_availability(True))
+        controls.addWidget(self.mark_available_button)
         controls.addStretch(1)
         self.search_edit = QLineEdit()
         self.search_edit.setPlaceholderText("Search filaments")
@@ -278,8 +290,8 @@ class FilamentDbWindow(QMainWindow):
         controls.addWidget(self.search_edit)
         layout.addLayout(controls)
 
-        self.table = FilamentTableWidget(0, 8)
-        self.table.setHorizontalHeaderLabels(["ID", "Brand", "Type", "Name", "Color", "HEX", "TD", "Source"])
+        self.table = FilamentTableWidget(0, 9)
+        self.table.setHorizontalHeaderLabels(["ID", "Brand", "Type", "Name", "Status", "Color", "HEX", "TD", "Source"])
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QTableWidget.SelectionMode.ExtendedSelection)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
@@ -297,13 +309,15 @@ class FilamentDbWindow(QMainWindow):
         header.setSectionResizeMode(5, QHeaderView.ResizeMode.Fixed)
         header.setSectionResizeMode(6, QHeaderView.ResizeMode.Fixed)
         header.setSectionResizeMode(7, QHeaderView.ResizeMode.Fixed)
+        header.setSectionResizeMode(8, QHeaderView.ResizeMode.Fixed)
         self.table.setColumnWidth(0, 48)
         self.table.setColumnWidth(1, 132)
         self.table.setColumnWidth(2, 140)
-        self.table.setColumnWidth(4, 54)
-        self.table.setColumnWidth(5, 98)
-        self.table.setColumnWidth(6, 72)
-        self.table.setColumnWidth(7, 90)
+        self.table.setColumnWidth(4, 100)
+        self.table.setColumnWidth(5, 54)
+        self.table.setColumnWidth(6, 98)
+        self.table.setColumnWidth(7, 72)
+        self.table.setColumnWidth(8, 90)
         vertical_header.setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
         vertical_header.setDefaultSectionSize(DEFAULT_TABLE_ROW_HEIGHT)
         vertical_header.setMinimumSectionSize(DEFAULT_TABLE_ROW_HEIGHT)
@@ -357,6 +371,7 @@ class FilamentDbWindow(QMainWindow):
                 row["brand"],
                 row["filament_type"],
                 row["name"],
+                "Available" if bool(row["available"]) else "Out",
                 "",
                 row["color"],
                 "" if row["td"] is None else f"{float(row['td']):.2f}",
@@ -365,23 +380,29 @@ class FilamentDbWindow(QMainWindow):
             for column, value in enumerate(values):
                 if column == 0:
                     item = NumericTableWidgetItem(int(row["id"]), value)
-                elif column == 6:
+                elif column == 7:
                     numeric_td = float(row["td"]) if row["td"] is not None else -1.0
                     item = NumericTableWidgetItem(numeric_td, value)
                 else:
                     item = QTableWidgetItem(value)
                 if column == 0:
                     item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-                if column == 6:
+                if column == 7:
                     item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+                if column == 4:
+                    item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
                 if column == self.COLOR_SWATCH_COLUMN:
                     item.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
                     item.setToolTip(f"Double-click to change {row['name']} color")
+                if not bool(row["available"]):
+                    item.setForeground(QColor("#9f9f9f"))
                 self.table.setItem(row_index, column, item)
             swatch = ClickableColorSwatch(size=22)
             swatch.set_color(row["color"])
             swatch.clicked.connect(lambda record_id=row["id"]: self.edit_table_color(int(record_id)))
             self.table.setCellWidget(row_index, self.COLOR_SWATCH_COLUMN, swatch)
+            if not bool(row["available"]):
+                swatch.setToolTip(f"{row['name']} is marked out of stock")
             if selected_id is not None and int(row["id"]) == selected_id:
                 self.table.selectRow(row_index)
                 self.table.scrollToItem(self.table.item(row_index, 0))
@@ -404,6 +425,7 @@ class FilamentDbWindow(QMainWindow):
         filament_type = self.type_combo.currentText().strip()
         name = self.name_combo.currentText().strip()
         notes = self.notes_input.text().strip()
+        available = self.available_checkbox.isChecked()
         if not brand or not filament_type or not name:
             QMessageBox.warning(self, "Missing details", "Please fill in brand, type, and name before scanning.")
             return
@@ -423,7 +445,9 @@ class FilamentDbWindow(QMainWindow):
         self.save_color_button.setEnabled(False)
 
         self.scan_worker = ScanWorker(device_path, timeout=20.0)
-        self.scan_worker.finished_scan.connect(lambda td, color, device: self.finish_scan(td, color, device, brand, filament_type, name, notes))
+        self.scan_worker.finished_scan.connect(
+            lambda td, color, device: self.finish_scan(td, color, device, brand, filament_type, name, notes, available)
+        )
         self.scan_worker.failed_scan.connect(self.fail_scan)
         self.scan_worker.start()
 
@@ -436,12 +460,14 @@ class FilamentDbWindow(QMainWindow):
         filament_type: str,
         name: str,
         notes: str,
+        available: bool,
     ) -> None:
         record_id = add_filament(
             self.connection,
             brand=brand,
             filament_type=filament_type,
             name=name,
+            available=available,
             color=color,
             td=td,
             source="td1",
@@ -554,7 +580,7 @@ class FilamentDbWindow(QMainWindow):
         row = self._find_row_by_id(record_id)
         if row is None:
             return
-        current_hex = self.table.item(row, 5).text()
+        current_hex = self.table.item(row, self.HEX_COLUMN).text()
         current = QColor(current_hex)
         if not current.isValid():
             current = QColor("#CCCCCC")
@@ -595,6 +621,7 @@ class FilamentDbWindow(QMainWindow):
         self.notes_input.setText(row["notes"])
         self.td_value.setText("—" if row["td"] is None else f"{float(row['td']):.2f}")
         self.hex_input.setText(row["color"])
+        self.available_checkbox.setChecked(bool(row["available"]))
         self.device_value.setText("Saved record")
         self.saved_value.setText(f"Loaded #{record_id}")
         self.save_color_button.setEnabled(True)
@@ -610,6 +637,7 @@ class FilamentDbWindow(QMainWindow):
         filament_type = self.type_combo.currentText().strip()
         name = self.name_combo.currentText().strip()
         notes = self.notes_input.text().strip()
+        available = self.available_checkbox.isChecked()
         if not brand or not filament_type or not name:
             QMessageBox.warning(self, "Missing details", "Brand, type, and name are required.")
             return
@@ -622,6 +650,7 @@ class FilamentDbWindow(QMainWindow):
             filament_type=filament_type,
             name=name,
             notes=notes,
+            available=available,
         )
         if not updated:
             QMessageBox.warning(self, "Update failed", "Could not save the filament changes.")
@@ -651,8 +680,26 @@ class FilamentDbWindow(QMainWindow):
         self.td_value.setText("—")
         self.hex_input.clear()
         self.notes_input.clear()
+        self.available_checkbox.setChecked(True)
         self.save_color_button.setEnabled(False)
         self.save_changes_button.setEnabled(False)
+
+    def set_selected_availability(self, available: bool) -> None:
+        selected_rows = self.table.selectionModel().selectedRows()
+        if not selected_rows:
+            QMessageBox.information(self, "Nothing selected", "Select one or more filament rows first.")
+            return
+        selected_record_ids = sorted({int(self.table.item(index.row(), 0).text()) for index in selected_rows})
+        updated_count = set_filament_availability(self.connection, selected_record_ids, available=available)
+        if updated_count == 0:
+            status_text = "available" if available else "unavailable"
+            QMessageBox.information(self, "No changes", f"Selected filaments are already marked {status_text}.")
+            return
+        if self.current_edit_record_id in selected_record_ids:
+            self.available_checkbox.setChecked(available)
+        status_label = "available" if available else "unavailable"
+        self.scan_status.setText(f"Marked {updated_count} filament(s) as {status_label}.")
+        self.refresh_table()
 
     def _apply_style(self) -> None:
         self.setStyleSheet(

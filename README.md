@@ -7,6 +7,7 @@ It stores filament entries in a Git-friendly TSV file, provides a command-line i
 ## What FilamentDB Does
 
 - keeps a local catalog of filaments with brand, filament type, color name, hex color, and TD value
+- tracks filament availability so out-of-stock spools can be marked unavailable instead of deleted
 - stores data in `data/filaments.tsv` so the library stays portable and easy to sync
 - supports direct TD1 capture from macOS serial devices
 - lets you review and edit records from either the CLI or the GUI
@@ -44,6 +45,7 @@ Each filament row centers on a simple, practical set of fields:
 - `brand`
 - `type`
 - `name`
+- `available` (`yes`/`no`)
 - `color`
 - `td`
 
@@ -104,6 +106,17 @@ uv run python filament_db.py add \
   --notes "Measured on BIQU TD1"
 ```
 
+Add one that is already out of stock:
+
+```bash
+uv run python filament_db.py add \
+  --brand SUNLU \
+  --type "PLA Matte" \
+  --name "Matte Red (empty spool)" \
+  --color "#C62828" \
+  --unavailable
+```
+
 List all filaments:
 
 ```bash
@@ -126,6 +139,13 @@ Delete one record:
 
 ```bash
 uv run python filament_db.py delete 1
+```
+
+Mark filaments unavailable/available:
+
+```bash
+uv run python filament_db.py mark-unavailable 12 19
+uv run python filament_db.py mark-available 19
 ```
 
 Export to CSV:
@@ -160,6 +180,7 @@ The desktop GUI wraps the same library and scan workflow:
 - choose or type `brand`
 - choose or type `type`
 - choose or type `name`
+- set `Status` as available or out of stock
 - confirm the running build from the version badge in the top-right corner
 - press `Scan from TD1` while the filament is in the TD1
 - save the measured `TD` and `HEX` directly into the local library
@@ -167,7 +188,8 @@ The desktop GUI wraps the same library and scan workflow:
 - correct the color by typing a new hex value or double-clicking the swatch
 - browse the full table with row swatches, sorting, search, and a denser default row height
 - double-click a row to load it back into the editor
-- save edits to brand, type, name, notes, and color
+- save edits to brand, type, name, notes, status, and color
+- use `Mark Unavailable` / `Mark Available` on selected rows when spool stock changes
 - delete selected rows when they are no longer needed
 - get a warning and the option to modify or bypass if the filament type doesn't match a known material (PLA, PETG, TPU, ABS, ASA)
 

@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+
+from __future__ import annotations
+
+import re
+import shutil
+import subprocess
+from datetime import date
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parent
+BASE_DATE = date(2026, 2, 28)
+APP_NAME = "filamentDB"
+APP_PATH = Path.home() / "Applications" / f"{APP_NAME}.app"
+DIST_APP_PATH = ROOT / "dist" / f"{APP_NAME}.app"
+
+
+def _read(path: Path) -> str:
+    return path.read_text(encoding="utf-8")
+
+
+def _write(path: Path, text: str) -> None:
+    path.write_text(text, encoding="utf-8")
+
+
+def _replace_once(text: str, pattern: str, replacement: str) -> str:
+    new_text, count = re.subn(pattern, replacement, text, count=1, flags=re.M)
+    if count != 1:
+        raise RuntimeError(f"Could not update pattern in text: {pattern}")
+    return new_text
+
+
+def _current_version() -> tuple[int, int]:
+    pyproject = _read(ROOT / "pyproject.toml")
+    match = re.search(r'^version = "(\d+)\.(\d+)\.(\d+)"$', pyproject, re.M)
+    if not match:
+        raise RuntimeError("Could not find project version in pyproject.toml")
+    return int(match.group(2)), int(match.group(3))
+
+
+def _next_version() -> tuple[str, str]:
+    current_day, current_build = _current_version()
+    today_day = (date.today() - BASE_DATE).days
+    next_build = current_build + 1 if current_day == today_day else 0
+    version = f"0.{today_day}.{next_build}"
+    visible_version = f"v{today_day}.{next_build}"
+    return version, visible_version
+
+
+def _update_versions(new_version: str, visible_version: str) -> None:
+    pyproject_path = ROOT / "pyproject.toml"
+    build_app_path = ROOT / "build_macos_app.py"
+    uv_lock_path = ROOT / "uv.lock"
+    gui_path = ROOT / "filament_db_gui.py"
+
+    _write(
+        pyproject_path,
+        _replace_once(_read(pyproject_path), r'^version = ".*"$', f'version = "{new_version}"'),
+    )
+    _write(
+        build_app_path,
+        _replace_once(_read(build_app_path), r'^VERSION = ".*"$', f'VERSION = "{new_version}"'),
+    )
+    _write(
+        uv_lock_path,
+        _replace_once(
+            _read(uv_lock_path),
+            r'(\[\[package\]\]\nname = "filamentdb"\nversion = ")([^"]+)(")',
+            rf'\g<1>{new_version}\3',
+        ),
+    )
+    _write(
+        gui_path,
+        _replace_once(_read(gui_path), r'^VISIBLE_VERSION = ".*"$', f'VISIBLE_VERSION = "{visible_version}"'),
+    )
+
+
+def _git(args: list[str]) -> None:
+    subprocess.run(["git", "-C", str(ROOT), *args], check=True)
+
+
+def _sync_app_bundle() -> None:
+    if not DIST_APP_PATH.exists():
+        raise RuntimeError(f"Expected built app at {DIST_APP_PATH}")
+    APP_PATH.parent.mkdir(parents=True, exist_ok=True)
+    if APP_PATH.exists():
+        shutil.rmtree(APP_PATH)
+    shutil.copytree(DIST_APP_PATH, APP_PATH)
+
+
+def main() -> int:
+    new_version, visible_version = _next_version()
+    print(f"Releasing {new_version} ({visible_version})")
+    _update_versions(new_version, visible_version)
+
+    _git(["add", "-u"])
+    _git(["add", "ship"])
+    _git(["commit", "-m", f"chore: release {visible_version}"])
+    _git(["push", "origin", "main"])
+
+    subprocess.run([str(ROOT / "build_filamentdb_app.sh")], check=True)
+    _sync_app_bundle()
+    subprocess.run(["pkill", "-x", APP_NAME], check=False)
+    subprocess.run(["open", "-n", "-a", str(APP_PATH)], check=True)
+    print(APP_PATH)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

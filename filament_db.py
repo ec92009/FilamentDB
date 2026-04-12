@@ -26,6 +26,7 @@ FIELDNAMES = [
     "brand",
     "filament_type",
     "name",
+    "available",
     "color",
     "td",
     "source",
@@ -190,6 +191,7 @@ def parse_args() -> argparse.Namespace:
     add_parser.add_argument("--td", type=float, default=None, help="Transmission Distance value, if known.")
     add_parser.add_argument("--source", default="manual", help="Source of the record, for example td1, vendor, or sample.")
     add_parser.add_argument("--notes", default="", help="Optional notes.")
+    add_parser.add_argument("--unavailable", action="store_true", help="Save this filament as unavailable (out of stock).")
 
     list_parser = subparsers.add_parser("list", help="List filament records.")
     list_parser.add_argument("--limit", type=int, default=100, help="Maximum number of rows to show.")
@@ -199,6 +201,12 @@ def parse_args() -> argparse.Namespace:
 
     delete_parser = subparsers.add_parser("delete", help="Delete one filament record.")
     delete_parser.add_argument("id", type=int, help="Filament record id.")
+
+    mark_unavailable_parser = subparsers.add_parser("mark-unavailable", help="Mark one or more filament records as unavailable.")
+    mark_unavailable_parser.add_argument("ids", type=int, nargs="+", help="One or more filament record ids.")
+
+    mark_available_parser = subparsers.add_parser("mark-available", help="Mark one or more filament records as available.")
+    mark_available_parser.add_argument("ids", type=int, nargs="+", help="One or more filament record ids.")
 
     search_parser = subparsers.add_parser("search", help="Search filament records by text.")
     search_parser.add_argument("query", help="Free-text search query.")
@@ -213,6 +221,7 @@ def parse_args() -> argparse.Namespace:
     scan_parser.add_argument("--name", required=True, help="HueForge-style material name.")
     scan_parser.add_argument("--source", default="td1", help="Source label for the saved record.")
     scan_parser.add_argument("--notes", default="", help="Optional notes.")
+    scan_parser.add_argument("--unavailable", action="store_true", help="Save this filament as unavailable (out of stock).")
     scan_parser.add_argument(
         "--device",
         default=None,
@@ -247,12 +256,24 @@ def normalize_td(value: object) -> Optional[float]:
     return float(value)
 
 
+def normalize_available(value: object) -> bool:
+    if isinstance(value, bool):
+        return value
+    normalized = str(value).strip().lower()
+    if normalized in {"", "1", "true", "yes", "y", "available", "in_stock", "instock"}:
+        return True
+    if normalized in {"0", "false", "no", "n", "unavailable", "out"}:
+        return False
+    return True
+
+
 def normalize_record(raw: dict[str, object]) -> dict[str, object]:
     return {
         "id": int(raw["id"]),
         "brand": str(raw.get("brand", "")).strip(),
         "filament_type": str(raw.get("filament_type", "")).strip(),
         "name": str(raw.get("name", "")).strip(),
+        "available": normalize_available(raw.get("available", True)),
         "color": ensure_hex_color(str(raw.get("color", "#000000"))),
         "td": normalize_td(raw.get("td")),
         "source": str(raw.get("source", "manual")).strip() or "manual",
@@ -268,6 +289,7 @@ def serialize_record(record: dict[str, object]) -> dict[str, str]:
         "brand": str(record["brand"]),
         "filament_type": str(record["filament_type"]),
         "name": str(record["name"]),
+        "available": "1" if normalize_available(record.get("available", True)) else "0",
         "color": str(record["color"]),
         "td": "" if record["td"] is None else f"{float(record['td']):.2f}",
         "source": str(record["source"]),
@@ -290,10 +312,16 @@ def import_legacy_sqlite(legacy_path: Path) -> list[dict[str, object]]:
     connection = sqlite3.connect(str(legacy_path))
     connection.row_factory = sqlite3.Row
     try:
+        columns = {
+            str(row["name"])
+            for row in connection.execute("PRAGMA table_info(filaments)")
+        }
+        has_available = "available" in columns
+        select_available = "available," if has_available else "1 AS available,"
         rows = list(
             connection.execute(
-                """
-                SELECT id, brand, filament_type, name, color, td, source, notes, created_at, updated_at
+                f"""
+                SELECT id, brand, filament_type, name, {select_available} color, td, source, notes, created_at, updated_at
                 FROM filaments
                 ORDER BY id
                 """
@@ -328,6 +356,12 @@ def connect(db_path: Path) -> FilamentStore:
 
 def migrate_schema(store: FilamentStore) -> None:
     if not store.path.exists():
+        store.save()
+        return
+    with store.path.open("r", encoding="utf-8", newline="") as handle:
+        header_line = handle.readline().strip()
+    current_fields = header_line.split("\t") if header_line else []
+    if current_fields != FIELDNAMES:
         store.save()
 
 
@@ -396,6 +430,7 @@ def add_filament(
     brand: str,
     filament_type: str,
     name: str,
+    available: bool,
     color: str,
     td: Optional[float],
     source: str,
@@ -410,6 +445,7 @@ def add_filament(
                 "brand": brand,
                 "filament_type": filament_type,
                 "name": name,
+                "available": available,
                 "color": color,
                 "td": td,
                 "source": source,
@@ -433,6 +469,7 @@ def seed_samples(store: FilamentStore, replace: bool) -> int:
             brand=item["brand"],
             filament_type=item["type"],
             name=item["name"],
+            available=True,
             color=item["color"],
             td=item["td"],
             source=item["source"],
@@ -456,6 +493,7 @@ def list_filaments(store: FilamentStore, *, limit: Optional[int] = None, query: 
             if needle in str(row["brand"]).lower()
             or needle in str(row["filament_type"]).lower()
             or needle in str(row["name"]).lower()
+            or needle in ("available" if normalize_available(row.get("available", True)) else "unavailable")
             or needle in str(row["color"]).lower()
             or needle in str(row["source"]).lower()
             or needle in str(row["notes"]).lower()
@@ -476,7 +514,7 @@ def print_rows(rows: list[dict[str, object]]) -> None:
         print("No filament records found.")
         return
 
-    headers = ["id", "brand", "type", "name", "color", "td", "source"]
+    headers = ["id", "brand", "type", "name", "available", "color", "td", "source"]
     print(" | ".join(headers))
     print("-" * 96)
     for row in rows:
@@ -487,6 +525,7 @@ def print_rows(rows: list[dict[str, object]]) -> None:
                     str(row["brand"]),
                     str(row["filament_type"]),
                     str(row["name"]),
+                    "yes" if normalize_available(row.get("available", True)) else "no",
                     str(row["color"]),
                     format_td(normalize_td(row["td"])),
                     str(row["source"]),
@@ -511,7 +550,7 @@ def export_csv(store: FilamentStore, path: Path) -> int:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
-        writer.writerow(["id", "brand", "type", "name", "color", "td", "source", "notes", "created_at", "updated_at"])
+        writer.writerow(["id", "brand", "type", "name", "available", "color", "td", "source", "notes", "created_at", "updated_at"])
         for row in rows:
             writer.writerow(
                 [
@@ -519,6 +558,7 @@ def export_csv(store: FilamentStore, path: Path) -> int:
                     row["brand"],
                     row["filament_type"],
                     row["name"],
+                    normalize_available(row.get("available", True)),
                     row["color"],
                     normalize_td(row["td"]),
                     row["source"],
@@ -567,6 +607,7 @@ def update_filament(
     filament_type: str,
     name: str,
     notes: str,
+    available: bool,
 ) -> bool:
     for record in store.records:
         if int(record["id"]) == record_id:
@@ -574,10 +615,24 @@ def update_filament(
             record["filament_type"] = filament_type.strip()
             record["name"] = name.strip()
             record["notes"] = notes.strip()
+            record["available"] = bool(available)
             record["updated_at"] = now_timestamp()
             store.save()
             return True
     return False
+
+
+def set_filament_availability(store: FilamentStore, record_ids: Iterable[int], *, available: bool) -> int:
+    id_set = {int(record_id) for record_id in record_ids}
+    updated = 0
+    for record in store.records:
+        if int(record["id"]) in id_set and normalize_available(record.get("available", True)) != available:
+            record["available"] = available
+            record["updated_at"] = now_timestamp()
+            updated += 1
+    if updated:
+        store.save()
+    return updated
 
 
 def fetch_filament(store: FilamentStore, record_id: int) -> Optional[dict[str, object]]:
@@ -607,6 +662,7 @@ def main() -> int:
             brand=args.brand,
             filament_type=args.type,
             name=args.name,
+            available=not args.unavailable,
             color=args.color,
             td=args.td,
             source=args.source,
@@ -633,6 +689,22 @@ def main() -> int:
         print("Record not found.")
         return 1
 
+    if args.command == "mark-unavailable":
+        updated = set_filament_availability(store, args.ids, available=False)
+        if updated:
+            print(f"Marked {updated} filament(s) unavailable.")
+            return 0
+        print("No records were updated.")
+        return 1
+
+    if args.command == "mark-available":
+        updated = set_filament_availability(store, args.ids, available=True)
+        if updated:
+            print(f"Marked {updated} filament(s) available.")
+            return 0
+        print("No records were updated.")
+        return 1
+
     if args.command == "search":
         rows = list_filaments(store, limit=args.limit, query=args.query)
         rows.sort(key=lambda row: (str(row["brand"]), str(row["filament_type"]), str(row["name"]), int(row["id"])))
@@ -657,6 +729,7 @@ def main() -> int:
             brand=args.brand,
             filament_type=args.type,
             name=args.name,
+            available=not args.unavailable,
             color=color,
             td=td,
             source=args.source,

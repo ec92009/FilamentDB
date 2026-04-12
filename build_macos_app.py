@@ -15,7 +15,7 @@ from PySide6.QtSvg import QSvgRenderer
 
 APP_NAME = "filamentDB"
 BUNDLE_ID = "com.ecohen.filamentdb"
-VERSION = "0.1.5"
+VERSION = "0.43.0"
 PROJECT_DIR = Path(__file__).resolve().parent
 ICON_SVG = PROJECT_DIR / "filamentdb_icon.svg"
 ENTRY_SCRIPT = PROJECT_DIR / "filament_db_gui.py"
