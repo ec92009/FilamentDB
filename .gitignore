@@ -4,6 +4,7 @@ out/
 build/
 dist/
 .venv/
+.claude/worktrees/
 __pycache__/
 *.db
 *.sqlite
